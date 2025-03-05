@@ -39,12 +39,17 @@
         .btn.delete {
             background-color: #dc3545;
         }
+        .btn.edit {
+            background-color: #ffc107;
+            color: black;
+        }
         .gift-list {
             margin-top: 20px;
         }
         .gift-item {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 10px;
             border: 1px solid #ddd;
             margin-bottom: 10px;
@@ -52,6 +57,36 @@
         }
         .gift-item span {
             flex: 1;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        .modal input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        .modal button {
+            padding: 10px 20px;
+            margin-right: 10px;
         }
     </style>
 </head>
@@ -74,6 +109,15 @@
         </div>
     </div>
 
+    <!-- 修改數量的彈出視窗 -->
+    <div class="modal-overlay" id="modal-overlay"></div>
+    <div class="modal" id="edit-modal">
+        <h3>修改數量</h3>
+        <input type="number" id="edit-quantity" placeholder="輸入新數量">
+        <button class="btn" onclick="saveEdit()">保存</button>
+        <button class="btn delete" onclick="closeEditModal()">取消</button>
+    </div>
+
     <script>
         // 禮物清單陣列
         let gifts = [];
@@ -81,15 +125,22 @@
         // 新增禮物
         function addGift() {
             const name = document.getElementById('gift-name').value;
-            const quantity = document.getElementById('gift-quantity').value;
+            const quantity = parseInt(document.getElementById('gift-quantity').value);
 
-            if (name && quantity) {
-                gifts.push({ name, quantity });
+            if (name && !isNaN(quantity)) {
+                const existingGiftIndex = gifts.findIndex(gift => gift.name === name);
+                if (existingGiftIndex !== -1) {
+                    // 如果禮物已存在，更新數量
+                    gifts[existingGiftIndex].quantity += quantity;
+                } else {
+                    // 如果禮物不存在，新增禮物
+                    gifts.push({ name, quantity });
+                }
                 updateGiftList();
                 document.getElementById('gift-name').value = '';
                 document.getElementById('gift-quantity').value = '';
             } else {
-                alert('請填寫禮物名稱和數量！');
+                alert('請填寫禮物名稱和有效的數量！');
             }
         }
 
@@ -97,6 +148,33 @@
         function deleteGift(index) {
             gifts.splice(index, 1);
             updateGiftList();
+        }
+
+        // 打開修改數量的彈出視窗
+        let currentEditIndex = null;
+        function openEditModal(index) {
+            currentEditIndex = index;
+            document.getElementById('edit-quantity').value = gifts[index].quantity;
+            document.getElementById('modal-overlay').style.display = 'block';
+            document.getElementById('edit-modal').style.display = 'block';
+        }
+
+        // 保存修改的數量
+        function saveEdit() {
+            const newQuantity = parseInt(document.getElementById('edit-quantity').value);
+            if (!isNaN(newQuantity)) {
+                gifts[currentEditIndex].quantity = newQuantity;
+                updateGiftList();
+                closeEditModal();
+            } else {
+                alert('請輸入有效的數量！');
+            }
+        }
+
+        // 關閉修改數量的彈出視窗
+        function closeEditModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
+            document.getElementById('edit-modal').style.display = 'none';
         }
 
         // 更新禮物清單顯示
@@ -110,6 +188,7 @@
                 giftItem.innerHTML = `
                     <span>${gift.name}</span>
                     <span>數量: ${gift.quantity}</span>
+                    <button class="btn edit" onclick="openEditModal(${index})">修改數量</button>
                     <button class="btn delete" onclick="deleteGift(${index})">刪除</button>
                 `;
                 giftList.appendChild(giftItem);
