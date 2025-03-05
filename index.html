@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>綠色貨物管理系統</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e9f5e9;
+            color: #2f4f2f;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #ffffff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            border: 2px solid #4caf50;
+        }
+        h1 {
+            font-size: 28px;
+            text-align: center;
+            color: #388e3c;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        button.add {
+            background-color: #4caf50;
+            color: white;
+        }
+        button.adjust {
+            background-color: #2196f3;
+            color: white;
+        }
+        button.delete {
+            background-color: #f44336;
+            color: white;
+        }
+        button.export {
+            background-color: #ff9800;
+            color: white;
+        }
+        button.move {
+            background-color: #8bc34a;
+            color: white;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table th, table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        table th {
+            background-color: #c8e6c9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>綠色貨物管理系統</h1>
+        <div>
+            <div class="form-group">
+                <label for="itemName">貨物名稱:</label>
+                <input type="text" id="itemName" placeholder="輸入貨物名稱">
+            </div>
+            <div class="form-group">
+                <label for="itemQuantity">現時數量:</label>
+                <input type="number" id="itemQuantity" placeholder="輸入數量" min="0">
+            </div>
+            <button class="add" onclick="addItem()">新增貨物</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>貨物名稱</th>
+                    <th>數量</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="itemTable">
+                <!-- 動態生成的貨物資料將顯示在這裡 -->
+            </tbody>
+        </table>
+
+        <button class="export" onclick="exportRecords('txt')">匯出為文字檔</button>
+        <button class="export" onclick="exportRecords('json')">匯出為 JSON 檔</button>
+    </div>
+
+    <script>
+        const items = [];
+
+        // 新增貨物
+        function addItem() {
+            const name = document.getElementById("itemName").value.trim();
+            const quantity = parseInt(document.getElementById("itemQuantity").value.trim(), 10);
+
+            if (!name || isNaN(quantity) || quantity < 0) {
+                alert("請輸入有效的貨物名稱和數量！");
+                return;
+            }
+
+            // 檢查是否已存在同名貨物
+            const existingItem = items.find(item => item.name === name);
+            if (existingItem) {
+                alert("此貨物已存在，請調整數量！");
+                return;
+            }
+
+            items.push({ name, quantity });
+            renderTable();
+            document.getElementById("itemName").value = "";
+            document.getElementById("itemQuantity").value = "";
+        }
+
+        // 渲染表格
+        function renderTable() {
+            const tableBody = document.getElementById("itemTable");
+            tableBody.innerHTML = "";
+
+            items.forEach((item, index) => {
+                const row = document.createElement("tr");
+
+                const nameCell = document.createElement("td");
+                nameCell.textContent = item.name;
+
+                const quantityCell = document.createElement("td");
+                quantityCell.textContent = item.quantity;
+
+                const actionCell = document.createElement("td");
+                actionCell.innerHTML = `
+                    <button class="adjust" onclick="adjustQuantity(${index}, 1)">+1</button>
+                    <button class="adjust" onclick="adjustQuantity(${index}, -1)">-1</button>
+                    <button class="move" onclick="moveItem(${index}, 'up')">上移</button>
+                    <button class="move" onclick="moveItem(${index}, 'down')">下移</button>
+                    <button class="delete" onclick="deleteItem(${index})">刪除</button>
+                `;
+
+                row.appendChild(nameCell);
+                row.appendChild(quantityCell);
+                row.appendChild(actionCell);
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 調整數量
+        function adjustQuantity(index, amount) {
+            const item = items[index];
+            item.quantity += amount;
+
+            if (item.quantity < 0) {
+                item.quantity = 0;
+            }
+
+            renderTable();
+        }
+
+        // 刪除貨物
+        function deleteItem(index) {
+            if (confirm("確定要刪除此貨物嗎？")) {
+                items.splice(index, 1);
+                renderTable();
+            }
+        }
+
+        // 編排順序
+        function moveItem(index, direction) {
+            if (direction === 'up' && index > 0) {
+                [items[index], items[index - 1]] = [items[index - 1], items[index]];
+            } else if (direction === 'down' && index < items.length - 1) {
+                [items[index], items[index + 1]] = [items[index + 1], items[index]];
+            }
+            renderTable();
+        }
+
+        // 匯出紀錄
+        function exportRecords(format) {
+            if (items.length === 0) {
+                alert("目前沒有可匯出的紀錄！");
+                return;
+            }
+
+            const timestamp = new Date().toLocaleString();
+            const fileName = `貨物紀錄_${Date.now()}`;
+
+            if (format === 'txt') {
+                let content = `匯出時間: ${timestamp}\n\n貨物紀錄:\n`;
+                items.forEach(item => {
+                    content += `名稱: ${item.name}, 數量: ${item.quantity}\n`;
+                });
+
+                const blob = new Blob([content], { type: "text/plain" });
+                downloadFile(blob, `${fileName}.txt`);
+            } else if (format === 'json') {
+                const content = JSON.stringify({ timestamp, items }, null, 2);
+
+                const blob = new Blob([content], { type: "application/json" });
+                downloadFile(blob, `${fileName}.json`);
+            }
+        }
+
+        // 下載文件
+        function downloadFile(blob, fileName) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
